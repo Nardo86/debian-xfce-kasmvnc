@@ -6,6 +6,7 @@ ARG USER_UID=1000
 ARG USER_GID=1000
 ARG VNC_PASSWORD=password
 ARG ENABLE_HTTPS=false
+ARG ENABLE_GPU=false
 
 # Aggiorna sistema e installa XFCE completo + Firefox
 RUN apt-get update && apt-get upgrade -y && \
@@ -83,6 +84,16 @@ RUN touch /home/$USERNAME/.Xauthority && \
     echo '  udp:' >> /home/$USERNAME/start-vnc.sh && \
     echo '    public_ip: 127.0.0.1' >> /home/$USERNAME/start-vnc.sh && \
     echo 'EOF' >> /home/$USERNAME/start-vnc.sh && \
+    echo '    # Add GPU configuration if enabled' >> /home/$USERNAME/start-vnc.sh && \
+    echo '    if [ "$ENABLE_GPU" = "true" ]; then' >> /home/$USERNAME/start-vnc.sh && \
+    echo '        echo "desktop:" >> ~/.vnc/kasmvnc.yaml' >> /home/$USERNAME/start-vnc.sh && \
+    echo '        echo "  gpu:" >> ~/.vnc/kasmvnc.yaml' >> /home/$USERNAME/start-vnc.sh && \
+    echo '        echo "    hw3d: true" >> ~/.vnc/kasmvnc.yaml' >> /home/$USERNAME/start-vnc.sh && \
+    echo '        echo "    drinode: /dev/dri/renderD128" >> ~/.vnc/kasmvnc.yaml' >> /home/$USERNAME/start-vnc.sh && \
+    echo '        echo "GPU acceleration enabled (DRI3)"' >> /home/$USERNAME/start-vnc.sh && \
+    echo '    else' >> /home/$USERNAME/start-vnc.sh && \
+    echo '        echo "GPU acceleration disabled"' >> /home/$USERNAME/start-vnc.sh && \
+    echo '    fi' >> /home/$USERNAME/start-vnc.sh && \
     echo '    PROTOCOL="http"' >> /home/$USERNAME/start-vnc.sh && \
     echo 'else' >> /home/$USERNAME/start-vnc.sh && \
     echo '    echo "Using default HTTPS configuration"' >> /home/$USERNAME/start-vnc.sh && \
@@ -112,6 +123,7 @@ ENV USER=$USERNAME
 ENV HOME=/home/$USERNAME
 ENV VNC_PASSWORD=$VNC_PASSWORD
 ENV ENABLE_HTTPS=$ENABLE_HTTPS
+ENV ENABLE_GPU=$ENABLE_GPU
 
 # Esponi porta KasmVNC
 EXPOSE 8444

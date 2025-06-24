@@ -6,6 +6,7 @@ CONTAINER_NAME="debian-xfce-container"
 USERNAME="myuser"
 VNC_PASSWORD="${VNC_PASSWORD:-mypassword}"  # Usa variabile d'ambiente o default
 ENABLE_HTTPS="${ENABLE_HTTPS:-false}"       # Usa variabile d'ambiente o default
+ENABLE_GPU="${ENABLE_GPU:-false}"           # Usa variabile d'ambiente o default
 
 # Configurazione Docker Hub (usa variabili d'ambiente)
 DOCKERHUB_USERNAME="${DOCKERHUB_USERNAME:-}"  # Imposta con: export DOCKERHUB_USERNAME="your_username"
@@ -17,12 +18,14 @@ build() {
     echo "=== BUILDING DOCKER IMAGE (NO CACHE) ==="
     echo "Username: $USERNAME"
     echo "HTTPS Mode: $ENABLE_HTTPS"
+    echo "GPU Acceleration: $ENABLE_GPU"
     echo "Password: [hidden for security]"
     
     docker build --no-cache \
         --build-arg USERNAME=$USERNAME \
         --build-arg VNC_PASSWORD="$VNC_PASSWORD" \
         --build-arg ENABLE_HTTPS=$ENABLE_HTTPS \
+        --build-arg ENABLE_GPU=$ENABLE_GPU \
         -t $IMAGE_NAME .
     echo "Build completed!"
 }
@@ -38,12 +41,29 @@ run_container() {
         PROTOCOL="http"
     fi
     
+    # Determina le opzioni Docker per GPU
+    GPU_OPTIONS=""
+    if [ "$ENABLE_GPU" = "true" ]; then
+        echo "GPU acceleration enabled - mounting GPU render device"
+        # Verifica che il dispositivo esista
+        if [ -e "/dev/dri/renderD128" ]; then
+            GPU_OPTIONS="--device=/dev/dri/renderD128:/dev/dri/renderD128"
+            echo "GPU device /dev/dri/renderD128 found and mounted"
+        else
+            echo "WARNING: /dev/dri/renderD128 not found - GPU acceleration may not work"
+            echo "Available DRI devices:"
+            ls -la /dev/dri/ 2>/dev/null || echo "No DRI devices found"
+        fi
+    fi
+    
     docker run -d \
         --name $CONTAINER_NAME \
         -p 8444:8444 \
         -v $HOME/docker-shared:/home/$USERNAME/shared \
         -e VNC_PASSWORD="$VNC_PASSWORD" \
         -e ENABLE_HTTPS="$ENABLE_HTTPS" \
+        -e ENABLE_GPU="$ENABLE_GPU" \
+        $GPU_OPTIONS \
         $IMAGE_NAME
     
     echo "KasmVNC started!"
@@ -58,12 +78,26 @@ run_container() {
 # Funzione per debug interattivo
 debug() {
     echo "=== DEBUG MODE - INTERACTIVE ==="
+    # Determina le opzioni Docker per GPU
+    GPU_OPTIONS=""
+    if [ "$ENABLE_GPU" = "true" ]; then
+        echo "GPU acceleration enabled - mounting GPU render device"
+        if [ -e "/dev/dri/renderD128" ]; then
+            GPU_OPTIONS="--device=/dev/dri/renderD128:/dev/dri/renderD128"
+            echo "GPU device /dev/dri/renderD128 found and mounted"
+        else
+            echo "WARNING: /dev/dri/renderD128 not found - GPU acceleration may not work"
+        fi
+    fi
+    
     docker run -it --rm \
         --name $CONTAINER_NAME-debug \
         -p 8444:8444 \
         -v $HOME/docker-shared:/home/$USERNAME/shared \
         -e VNC_PASSWORD="$VNC_PASSWORD" \
         -e ENABLE_HTTPS="$ENABLE_HTTPS" \
+        -e ENABLE_GPU="$ENABLE_GPU" \
+        $GPU_OPTIONS \
         $IMAGE_NAME /bin/bash
 }
 
@@ -178,6 +212,7 @@ show_help() {
     echo "  USERNAME: $USERNAME"
     echo "  VNC_PASSWORD: $([ -n "$VNC_PASSWORD" ] && echo '[set via env]' || echo '[using default]')"
     echo "  ENABLE_HTTPS: $ENABLE_HTTPS"
+    echo "  ENABLE_GPU: $ENABLE_GPU"
     echo "  IMAGE: $IMAGE_NAME"
     echo "  PORT: 8444"
     echo ""
@@ -190,6 +225,7 @@ show_help() {
     echo "  export DOCKERHUB_USERNAME='your_username'"
     echo "  export VNC_PASSWORD='your_secure_password'"
     echo "  export ENABLE_HTTPS='true'  # or 'false'"
+    echo "  export ENABLE_GPU='true'    # for hardware acceleration"
 }
 
 # Menu principale
