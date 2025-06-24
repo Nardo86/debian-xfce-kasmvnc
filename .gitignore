@@ -1,0 +1,61 @@
+# Environment files with sensitive data
+.env
+*.env.local
+*.env.production
+
+# Docker build cache and temporary files
+.dockerignore
+docker-shared/
+shared/
+
+# VNC configuration files (may contain passwords)
+.vnc/
+*.vnc/
+
+# Logs
+*.log
+logs/
+
+# Operating System files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.vim/
+
+# Backup files
+*.bak
+*.backup
+*.tmp
+
+# Local development
+test/
+temp/
+.temp/
+
+# Node modules (if any JS tools are added later)
+node_modules/
+
+# Python cache (if any Python tools are added later)
+__pycache__/
+*.pyc
+*.pyo
+
+# Build artifacts
+build/
+dist/
+
+# Personal notes
+notes.txt
+todo.txt
+*.notes
