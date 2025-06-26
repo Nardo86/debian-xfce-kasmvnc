@@ -22,9 +22,17 @@ RUN apt-get update && apt-get upgrade -y && \
     && rm -rf /var/lib/apt/lists/*
 
 # Installa KasmVNC ultima versione da GitHub
-RUN wget -O /tmp/kasmvnc.deb \
+RUN ARCH=$(dpkg --print-architecture) && \
+    if [ "$ARCH" = "amd64" ]; then \
+        KASMVNC_ARCH="amd64"; \
+    elif [ "$ARCH" = "arm64" ]; then \
+        KASMVNC_ARCH="arm64"; \
+    else \
+        echo "Unsupported architecture: $ARCH" && exit 1; \
+    fi && \
+    wget -O /tmp/kasmvnc.deb \
     "$(curl -s https://api.github.com/repos/kasmtech/KasmVNC/releases/latest | \
-    grep browser_download_url | grep bookworm.*amd64.deb | head -1 | cut -d '"' -f 4)" && \
+    grep browser_download_url | grep bookworm.*${KASMVNC_ARCH}.deb | head -1 | cut -d '"' -f 4)" && \
     apt-get update && \
     apt-get install -y /tmp/kasmvnc.deb && \
     rm /tmp/kasmvnc.deb && \
