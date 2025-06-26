@@ -42,6 +42,11 @@ echo "👤 Detected user: $USERNAME"
 
 ## Customization Scripts Guidelines
 
+### Critical Rule: Dual Privilege Management
+Scripts must handle both execution contexts:
+- **System operations** (apt-get, file cleanup): Use `$SUDO` variable
+- **User operations** (npm, user configs): Always target detected user with `sudo -u $USERNAME`
+
 ### Script Template:
 ```bash
 #!/bin/bash
@@ -57,18 +62,25 @@ if [ -z "$USERNAME" ]; then
 fi
 echo "👤 Detected user: $USERNAME"
 
-# Update package list
-apt-get update
+# Check if running as root, if not use sudo for system operations
+if [ "$EUID" -ne 0 ]; then
+    SUDO="sudo"
+else
+    SUDO=""
+fi
 
-# Install packages
-apt-get install -y package1 package2
+# Update package list (system operation)
+$SUDO apt-get update
 
-# User-specific configuration
-chown -R $USERNAME:$USERNAME /home/$USERNAME/.config
+# Install packages (system operation)
+$SUDO apt-get install -y package1 package2
 
-# Clean up
-apt-get clean
-rm -rf /var/lib/apt/lists/*
+# User-specific configuration (always as target user)
+$SUDO chown -R $USERNAME:$USERNAME /home/$USERNAME/.config
+
+# Clean up (system operation)
+$SUDO apt-get clean
+$SUDO rm -rf /var/lib/apt/lists/*
 
 echo "✅ [TOOL_NAME] installation completed!"
 echo ""
@@ -76,6 +88,23 @@ echo "📋 Next steps:"
 echo "   - Additional configuration steps"
 echo ""
 ```
+
+### npm/Node.js Specific Pattern:
+```bash
+# CRITICAL: npm operations must ALWAYS run as target user, never as root
+if [ "$EUID" -eq 0 ]; then
+    # Running as root, switch to target user for npm
+    sudo -u $USERNAME bash -c 'export PATH=/home/'$USERNAME'/.npm-global/bin:$PATH && npm install -g package'
+else
+    # Running as user, install directly
+    export PATH=/home/$USERNAME/.npm-global/bin:$PATH && npm install -g package
+fi
+```
+
+### Execution Context Support:
+- ✅ `docker exec container bash /scripts/script.sh` (as root)
+- ✅ `docker exec --user user container bash /scripts/script.sh` (as user)
+- ❌ Never assume execution context - always detect and adapt
 
 ## README Documentation Standards
 

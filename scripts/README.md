@@ -30,6 +30,9 @@ docker exec container-name bash /scripts/development/install-claude-code.sh
 ```bash
 # Complete Claude development environment
 docker exec container-name bash /scripts/examples/setup-claude-vibe.sh
+
+# Install torrent tools with VPN protection
+docker exec container-name bash /scripts/development/install-torrent-vpn.sh
 ```
 
 ## 📋 Available Scripts
@@ -40,17 +43,29 @@ docker exec container-name bash /scripts/examples/setup-claude-vibe.sh
 
 ### Development Tools (`development/`)
 - **`install-claude-code.sh`** - Claude Code CLI for AI-assisted development
+- **`install-torrent-vpn.sh`** - ProtonVPN CLI + qBittorrent for secure torrenting
 
 ### Example Setups (`examples/`)
 - **`setup-claude-vibe.sh`** - Complete environment: Git + Node.js + Claude Code
 
 ## 🔧 Usage Tips
 
-1. **Run scripts as root** - Scripts auto-detect the container user (configurable username)
+1. **Dual privilege handling** - Scripts work both as root and non-root user
+   - System packages: Use sudo when needed
+   - User configurations: Always target the detected user (UID 1000)
 2. **Modular approach** - Install only what you need
 3. **Safe to re-run** - Scripts check for existing installations
-4. **Permission handling** - npm configured to avoid EACCES errors
+4. **npm permissions** - Always configured for target user, never root
 5. **User detection** - Scripts automatically find the non-root user (UID 1000)
+
+### Execution Methods:
+```bash
+# Method 1: Run as root (recommended)
+docker exec container-name bash /scripts/base/install-nodejs.sh
+
+# Method 2: Run as user (uses sudo internally)
+docker exec --user user container-name bash /scripts/base/install-nodejs.sh
+```
 
 ## 🤝 Contributing
 

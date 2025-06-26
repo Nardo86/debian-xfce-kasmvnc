@@ -19,15 +19,26 @@ if ! command -v npm &> /dev/null; then
     exit 1
 fi
 
-# Install Claude Code CLI globally
+# Install Claude Code CLI globally as the target user
+# This ensures npm uses the user's configuration, not root's
 echo "📦 Installing Claude Code CLI via npm..."
-sudo -u $USERNAME npm install -g @anthropic-ai/claude-code
+if [ "$EUID" -eq 0 ]; then
+    # Running as root, use sudo to switch to target user
+    sudo -u $USERNAME bash -c 'export PATH=/home/'$USERNAME'/.npm-global/bin:$PATH && npm install -g @anthropic-ai/claude-code'
+else
+    # Running as user, install directly
+    export PATH=/home/$USERNAME/.npm-global/bin:$PATH && npm install -g @anthropic-ai/claude-code
+fi
 
 # Verify installation
 echo "✅ Claude Code CLI installation completed!"
 echo ""
 echo "📋 Installed version:"
-sudo -u $USERNAME claude --version 2>/dev/null || echo "   Run 'claude --version' to verify installation"
+if [ "$EUID" -eq 0 ]; then
+    sudo -u $USERNAME bash -c 'export PATH=/home/'$USERNAME'/.npm-global/bin:$PATH && claude --version' 2>/dev/null || echo "   Run 'claude --version' to verify installation"
+else
+    export PATH=/home/$USERNAME/.npm-global/bin:$PATH && claude --version 2>/dev/null || echo "   Run 'claude --version' to verify installation"
+fi
 echo ""
 echo "🔧 Next steps:"
 echo "   1. Run 'claude auth' to authenticate with your Anthropic API key"

@@ -3,17 +3,24 @@ set -e
 
 echo "🔧 Installing Git..."
 
+# Check if running as root, if not use sudo
+if [ "$EUID" -ne 0 ]; then
+    SUDO="sudo"
+else
+    SUDO=""
+fi
+
 # Update package list
-apt-get update
+$SUDO apt-get update
 
 # Install Git and SSL certificates for HTTPS
-apt-get install -y \
+$SUDO apt-get install -y \
     git \
     ca-certificates
 
 # Clean up
-apt-get clean
-rm -rf /var/lib/apt/lists/*
+$SUDO apt-get clean
+$SUDO rm -rf /var/lib/apt/lists/*
 
 echo "✅ Git installation completed!"
 echo ""
