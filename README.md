@@ -36,8 +36,8 @@ The easiest way to get started is using the pre-built image from Docker Hub.
 docker run -d -p 8444:8444 nardo86/debian-xfce-kasmvnc:latest
 
 # Access via browser: http://localhost:8444
-# Username: myuser
-# Password: mypassword
+# Username: user
+# Password: password
 ```
 
 ### Docker Run Examples
@@ -55,7 +55,7 @@ docker run -d \
 docker run -d \
   --name debian-xfce \
   -p 8444:8444 \
-  -v /host/shared:/home/myuser/shared \
+  -v /host/shared:/home/user/shared \
   -e VNC_PASSWORD="mysecretpassword" \
   -e ENABLE_HTTPS="false" \
   nardo86/debian-xfce-kasmvnc:latest
@@ -75,7 +75,7 @@ services:
       - VNC_PASSWORD=mysecretpassword
       - ENABLE_HTTPS=false
     volumes:
-      - ./shared:/home/myuser/shared
+      - ./shared:/home/user/shared
     restart: unless-stopped
 ```
 
@@ -94,12 +94,12 @@ services:
       - ENABLE_HTTPS=false
       
       # Optional (uncomment to customize)
-      # - USER=myuser
-      # - HOME=/home/myuser
+      # - USER=user
+      # - HOME=/home/user
       # - KASMVNC_VERBOSE=1
     volumes:
-      - ./shared:/home/myuser/shared
-      - ./config:/home/myuser/.vnc
+      - ./shared:/home/user/shared
+      - ./config:/home/user/.vnc
     restart: unless-stopped
 ```
 
@@ -107,10 +107,10 @@ services:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `VNC_PASSWORD` | `mypassword` | Password for VNC access |
+| `VNC_PASSWORD` | `password` | Password for VNC access |
 | `ENABLE_HTTPS` | `false` | Enable HTTPS mode (`true`/`false`) |
-| `USER` | `myuser` | Username inside container |
-| `HOME` | `/home/myuser` | User home directory |
+| `USER` | `user` | Username inside container |
+| `HOME` | `/home/user` | User home directory |
 | `KASMVNC_VERBOSE` | `1` | Enable verbose logging |
 
 ### HTTP vs HTTPS Modes
