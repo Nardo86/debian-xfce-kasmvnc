@@ -111,6 +111,10 @@ RUN touch /home/$USERNAME/.Xauthority && \
     chmod +x /home/$USERNAME/start-vnc.sh && \
     chown $USERNAME:$USERNAME /home/$USERNAME/start-vnc.sh
 
+# Copy customization scripts
+COPY scripts/ /scripts/
+RUN chmod +x /scripts/base/*.sh /scripts/development/*.sh /scripts/examples/*.sh
+
 # Imposta directory di lavoro e proprietario
 WORKDIR /home/$USERNAME
 RUN chown -R $USERNAME:$USERNAME /home/$USERNAME
