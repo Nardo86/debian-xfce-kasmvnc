@@ -8,18 +8,56 @@ ARG VNC_PASSWORD=password
 ARG ENABLE_HTTPS=false
 ARG ENABLE_GPU=false
 
-# Aggiorna sistema e installa XFCE completo + Firefox
+# Aggiorna sistema e installa XFCE completo + Firefox + Terminal
 RUN apt-get update && apt-get upgrade -y && \
     apt-get install -y \
     xfce4 \
+    xfce4-terminal \
     firefox-esr \
     dbus-x11 \
     sudo \
     curl \
     wget \
     nano \
+    locales \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+# Configura locale UTF-8 per l'intero sistema
+RUN sed -i 's/^# *\(en_US.UTF-8\)/\1/' /etc/locale.gen && \
+    locale-gen && \
+    update-locale LANG=en_US.UTF-8
+
+# Configura xfce4-terminal con bash e UTF-8
+RUN mkdir -p /etc/xdg/xfce4/terminal && \
+    echo '[Configuration]' > /etc/xdg/xfce4/terminal/terminalrc && \
+    echo 'CommandLoginShell=TRUE' >> /etc/xdg/xfce4/terminal/terminalrc && \
+    echo 'CustomCommand=/bin/bash' >> /etc/xdg/xfce4/terminal/terminalrc && \
+    echo 'UseCustomCommand=TRUE' >> /etc/xdg/xfce4/terminal/terminalrc && \
+    echo 'FontName=Monospace 10' >> /etc/xdg/xfce4/terminal/terminalrc && \
+    echo 'MiscAlwaysShowTabs=FALSE' >> /etc/xdg/xfce4/terminal/terminalrc && \
+    echo 'MiscBell=FALSE' >> /etc/xdg/xfce4/terminal/terminalrc && \
+    echo 'MiscBidiSupportPerCell=TRUE' >> /etc/xdg/xfce4/terminal/terminalrc && \
+    echo 'MiscDefaultGeometry=80x24' >> /etc/xdg/xfce4/terminal/terminalrc && \
+    echo 'MiscInheritGeometry=FALSE' >> /etc/xdg/xfce4/terminal/terminalrc && \
+    echo 'MiscMenubarDefault=TRUE' >> /etc/xdg/xfce4/terminal/terminalrc && \
+    echo 'MiscMouseAutohide=FALSE' >> /etc/xdg/xfce4/terminal/terminalrc && \
+    echo 'MiscRewrapOnResize=TRUE' >> /etc/xdg/xfce4/terminal/terminalrc && \
+    echo 'MiscScrollAlternateScreen=TRUE' >> /etc/xdg/xfce4/terminal/terminalrc && \
+    echo 'MiscScrollOnOutput=FALSE' >> /etc/xdg/xfce4/terminal/terminalrc && \
+    echo 'MiscScrollOnKey=TRUE' >> /etc/xdg/xfce4/terminal/terminalrc && \
+    echo 'MiscShowRelaunchDialog=TRUE' >> /etc/xdg/xfce4/terminal/terminalrc && \
+    echo 'MiscShowUnsafePasteDialog=TRUE' >> /etc/xdg/xfce4/terminal/terminalrc && \
+    echo 'MiscSlimTabs=FALSE' >> /etc/xdg/xfce4/terminal/terminalrc && \
+    echo 'MiscTabCloseButtons=TRUE' >> /etc/xdg/xfce4/terminal/terminalrc && \
+    echo 'MiscTabCloseMiddleClick=TRUE' >> /etc/xdg/xfce4/terminal/terminalrc && \
+    echo 'MiscTabPosition=GTK_POS_TOP' >> /etc/xdg/xfce4/terminal/terminalrc && \
+    echo 'MiscHighlightUrls=TRUE' >> /etc/xdg/xfce4/terminal/terminalrc && \
+    echo 'MiscMiddleClickOpensUri=FALSE' >> /etc/xdg/xfce4/terminal/terminalrc && \
+    echo 'MiscCopyOnSelect=FALSE' >> /etc/xdg/xfce4/terminal/terminalrc && \
+    echo 'MiscShowRelaunchDialog=TRUE' >> /etc/xdg/xfce4/terminal/terminalrc && \
+    echo 'MiscRightClickAction=TERMINAL_RIGHT_CLICK_ACTION_CONTEXT_MENU' >> /etc/xdg/xfce4/terminal/terminalrc && \
+    echo 'ScrollingBar=TERMINAL_SCROLLBAR_RIGHT' >> /etc/xdg/xfce4/terminal/terminalrc
 
 # Installa KasmVNC ultima versione da GitHub
 RUN ARCH=$(dpkg --print-architecture) && \
@@ -136,6 +174,8 @@ ENV HOME=/home/$USERNAME
 ENV VNC_PASSWORD=$VNC_PASSWORD
 ENV ENABLE_HTTPS=$ENABLE_HTTPS
 ENV ENABLE_GPU=$ENABLE_GPU
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
 
 # Esponi porta KasmVNC
 EXPOSE 8444
