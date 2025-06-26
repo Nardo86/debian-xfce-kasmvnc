@@ -28,12 +28,10 @@ RUN sed -i 's/^# *\(en_US.UTF-8\)/\1/' /etc/locale.gen && \
     locale-gen && \
     update-locale LANG=en_US.UTF-8
 
-# Configura xfce4-terminal con bash e UTF-8
+# Configura xfce4-terminal con ottimizzazioni
 RUN mkdir -p /etc/xdg/xfce4/terminal && \
     echo '[Configuration]' > /etc/xdg/xfce4/terminal/terminalrc && \
     echo 'CommandLoginShell=TRUE' >> /etc/xdg/xfce4/terminal/terminalrc && \
-    echo 'CustomCommand=/bin/bash' >> /etc/xdg/xfce4/terminal/terminalrc && \
-    echo 'UseCustomCommand=TRUE' >> /etc/xdg/xfce4/terminal/terminalrc && \
     echo 'FontName=Monospace 10' >> /etc/xdg/xfce4/terminal/terminalrc && \
     echo 'MiscAlwaysShowTabs=FALSE' >> /etc/xdg/xfce4/terminal/terminalrc && \
     echo 'MiscBell=FALSE' >> /etc/xdg/xfce4/terminal/terminalrc && \
@@ -55,7 +53,6 @@ RUN mkdir -p /etc/xdg/xfce4/terminal && \
     echo 'MiscHighlightUrls=TRUE' >> /etc/xdg/xfce4/terminal/terminalrc && \
     echo 'MiscMiddleClickOpensUri=FALSE' >> /etc/xdg/xfce4/terminal/terminalrc && \
     echo 'MiscCopyOnSelect=FALSE' >> /etc/xdg/xfce4/terminal/terminalrc && \
-    echo 'MiscShowRelaunchDialog=TRUE' >> /etc/xdg/xfce4/terminal/terminalrc && \
     echo 'MiscRightClickAction=TERMINAL_RIGHT_CLICK_ACTION_CONTEXT_MENU' >> /etc/xdg/xfce4/terminal/terminalrc && \
     echo 'ScrollingBar=TERMINAL_SCROLLBAR_RIGHT' >> /etc/xdg/xfce4/terminal/terminalrc
 
@@ -77,9 +74,9 @@ RUN ARCH=$(dpkg --print-architecture) && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Crea gruppo e utente non-root
+# Crea gruppo e utente non-root con bash come shell predefinita
 RUN groupadd --gid $USER_GID $USERNAME \
-    && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
+    && useradd --uid $USER_UID --gid $USER_GID -m -s /bin/bash $USERNAME \
     && echo "$USERNAME:$USERNAME" | chpasswd \
     && usermod -aG sudo $USERNAME \
     && usermod -aG ssl-cert $USERNAME
@@ -159,7 +156,7 @@ RUN touch /home/$USERNAME/.Xauthority && \
 
 # Copy customization scripts
 COPY scripts/ /scripts/
-RUN chmod +x /scripts/base/*.sh /scripts/development/*.sh /scripts/examples/*.sh
+RUN chmod +x /scripts/base/*.sh /scripts/development/*.sh /scripts/multimedia/*.sh /scripts/examples/*.sh
 
 # Imposta directory di lavoro e proprietario
 WORKDIR /home/$USERNAME

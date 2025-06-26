@@ -54,6 +54,12 @@ chown $USERNAME:$USERNAME /home/$USERNAME/.profile /home/$USERNAME/.bashrc
 # Install yarn globally using the user's npm configuration
 sudo -u $USERNAME bash -c 'export PATH=/home/'$USERNAME'/.npm-global/bin:$PATH && npm install -g yarn'
 
+# Export PATH for current session (if running interactively)
+if [ -t 1 ]; then
+    echo "🔄 Updating PATH for current session..."
+    export PATH=/home/$USERNAME/.npm-global/bin:$PATH
+fi
+
 # Clean up
 $SUDO apt-get clean
 $SUDO rm -rf /var/lib/apt/lists/*
@@ -67,4 +73,7 @@ sudo -u $USERNAME yarn --version
 echo ""
 echo "🔧 npm configured to install global packages in /home/$USERNAME/.npm-global"
 echo "   (avoids EACCES permission errors)"
+echo ""
+echo "💡 Note: If npm global packages are not found, run:"
+echo "   source ~/.bashrc"
 echo ""

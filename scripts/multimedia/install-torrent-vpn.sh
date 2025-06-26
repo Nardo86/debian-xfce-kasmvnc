@@ -30,10 +30,14 @@ $SUDO apt-get install -y \
     ca-certificates \
     lsb-release
 
-# Add ProtonVPN repository
-echo "🔑 Adding ProtonVPN repository..."
-wget -qO - https://repo.protonvpn.com/debian/dists/stable/main/binary-all/protonvpn-stable-release_1.0.3-3_all.deb -O /tmp/protonvpn-stable-release.deb
-$SUDO dpkg -i /tmp/protonvpn-stable-release.deb
+# Add ProtonVPN GPG key and repository (official method)
+echo "🔑 Adding ProtonVPN GPG key..."
+wget -qO - https://repo.protonvpn.com/debian/public_key.asc | $SUDO gpg --dearmor -o /usr/share/keyrings/protonvpn-stable-archive-keyring.gpg
+
+echo "📦 Adding ProtonVPN repository..."
+echo "deb [signed-by=/usr/share/keyrings/protonvpn-stable-archive-keyring.gpg] https://repo.protonvpn.com/debian stable main" | $SUDO tee /etc/apt/sources.list.d/protonvpn-stable.list
+
+# Update package list
 $SUDO apt-get update
 
 # Install ProtonVPN CLI
@@ -45,7 +49,6 @@ echo "📥 Installing qBittorrent..."
 $SUDO apt-get install -y qbittorrent
 
 # Clean up
-$SUDO rm -f /tmp/protonvpn-stable-release.deb
 $SUDO apt-get clean
 $SUDO rm -rf /var/lib/apt/lists/*
 

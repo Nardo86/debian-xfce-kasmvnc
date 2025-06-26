@@ -99,6 +99,16 @@ else
     # Running as user, install directly
     export PATH=/home/$USERNAME/.npm-global/bin:$PATH && npm install -g package
 fi
+
+# Export PATH for current session (if interactive)
+if [ -t 1 ]; then
+    echo "🔄 Updating PATH for current session..."
+    export PATH=/home/$USERNAME/.npm-global/bin:$PATH
+fi
+
+# Always inform user about PATH reload
+echo "💡 Note: If npm global packages are not found, run:"
+echo "   source ~/.bashrc"
 ```
 
 ### Execution Context Support:

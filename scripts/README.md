@@ -8,6 +8,7 @@ This directory contains modular scripts to customize your Debian XFCE KasmVNC co
 scripts/
 ├── base/              # Core development tools
 ├── development/       # Specialized development environments  
+├── multimedia/        # Media and entertainment tools
 ├── examples/          # Ready-to-use combinations
 └── README.md         # This file
 ```
@@ -32,7 +33,7 @@ docker exec container-name bash /scripts/development/install-claude-code.sh
 docker exec container-name bash /scripts/examples/setup-claude-vibe.sh
 
 # Install torrent tools with VPN protection
-docker exec container-name bash /scripts/development/install-torrent-vpn.sh
+docker exec container-name bash /scripts/multimedia/install-torrent-vpn.sh
 ```
 
 ## 📋 Available Scripts
@@ -43,6 +44,8 @@ docker exec container-name bash /scripts/development/install-torrent-vpn.sh
 
 ### Development Tools (`development/`)
 - **`install-claude-code.sh`** - Claude Code CLI for AI-assisted development
+
+### Multimedia Tools (`multimedia/`)
 - **`install-torrent-vpn.sh`** - ProtonVPN CLI + qBittorrent for secure torrenting
 
 ### Example Setups (`examples/`)
