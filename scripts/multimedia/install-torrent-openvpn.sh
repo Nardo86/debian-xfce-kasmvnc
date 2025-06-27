@@ -32,9 +32,9 @@ $SUDO apt-get install -y \
 
 # Create OpenVPN configuration directory
 echo "📁 Creating OpenVPN configuration directories..."
-$SUDO mkdir -p /etc/openvpn/protonvpn
-$SUDO chown root:$USERNAME /etc/openvpn/protonvpn
-$SUDO chmod 775 /etc/openvpn/protonvpn
+$SUDO mkdir -p /etc/openvpn/configs
+$SUDO chown root:$USERNAME /etc/openvpn/configs
+$SUDO chmod 775 /etc/openvpn/configs
 
 # Create TUN device for OpenVPN (required in Docker containers)
 echo "🔧 Setting up TUN device for OpenVPN..."
@@ -57,7 +57,7 @@ echo "   • Any OpenVPN provider: Download .ovpn files"
 echo ""
 echo "🔧 Configuration steps:"
 echo "   1. Download .ovpn config files from your VPN provider"
-echo "   2. Copy files to: /etc/openvpn/protonvpn/ (or create provider folder)"
+echo "   2. Copy files to: /etc/openvpn/configs/"
 echo "   3. Connect: sudo openvpn --config [config-file].ovpn"
 echo "   4. Test connection: curl ifconfig.me (check IP changed)"
 echo ""
@@ -75,6 +75,5 @@ echo "   - Use kill switch if available from your VPN provider"
 echo ""
 echo "🔧 Docker/Container Notes:"
 echo "   - TUN device automatically created for container compatibility"
-echo "   - If connection fails, container may need --cap-add=NET_ADMIN"
-echo "   - Some VPN configs may require --privileged flag"
+echo "   - See main README for required Docker flags (--cap-add=NET_ADMIN)"
 echo ""

@@ -12,9 +12,14 @@ echo "=============================================="
 echo "   Inspired by haugene/docker-transmission-openvpn"
 echo "   Security concepts adapted for qBittorrent + OpenVPN"
 echo ""
+echo "⚠️  EXPERIMENTAL: Script in development phase"
+echo "   - May cause VNC connection loss due to route changes"
+echo "   - Use docker restart to recover if connection is lost"
+echo "   - Please report issues and feedback for improvements"
+echo ""
 
 # Configuration
-VPN_CONFIG_DIR="/etc/openvpn/protonvpn"
+VPN_CONFIG_DIR="/etc/openvpn/configs"
 VPN_CONFIG_FILE=""
 TORRENT_CLIENT="qbittorrent"
 
@@ -108,15 +113,54 @@ find_vpn_config() {
     return 0
 }
 
+# Function to create route preservation script
+create_route_script() {
+    local script_path="/tmp/openvpn-route-up.sh"
+    
+    cat > "$script_path" << 'EOF'
+#!/bin/bash
+# OpenVPN route-up script to preserve Docker network access
+echo "🔧 Preserving Docker routes after VPN connection..."
+
+# Get original gateway (not through tunnel)
+DEFAULT_GW=$(ip route show 0.0.0.0/0 | grep -v tun | awk '{print $3}' | head -1)
+ORIGINAL_DEV=$(ip route show 0.0.0.0/0 | grep -v tun | awk '{print $5}' | head -1)
+
+if [ -n "$DEFAULT_GW" ] && [ -n "$ORIGINAL_DEV" ]; then
+    echo "   Original gateway: $DEFAULT_GW via $ORIGINAL_DEV"
+    
+    # Preserve Docker networks
+    for network in 172.17.0.0/16 172.18.0.0/16 172.19.0.0/16 172.20.0.0/16; do
+        ip route add $network via $DEFAULT_GW dev $ORIGINAL_DEV 2>/dev/null || true
+    done
+    
+    echo "✅ Docker routes preserved"
+else
+    echo "⚠️  Could not determine original gateway"
+fi
+EOF
+    
+    chmod +x "$script_path"
+    echo "$script_path"
+}
+
 # Function to start VPN
 start_vpn() {
     echo "🚀 Starting OpenVPN connection..."
     echo "   Config: $(basename "$VPN_CONFIG_FILE")"
+    echo "   Attempting to preserve Docker network routes..."
     echo "   Press Ctrl+C to stop VPN and exit"
     echo ""
     
-    # Start OpenVPN in background
-    openvpn --config "$VPN_CONFIG_FILE" --daemon --writepid /var/run/openvpn.pid
+    # Create route preservation script
+    local route_script=$(create_route_script)
+    
+    # Start OpenVPN with route script
+    openvpn --config "$VPN_CONFIG_FILE" \
+            --daemon \
+            --writepid /var/run/openvpn.pid \
+            --route-up "$route_script" \
+            --script-security 2
     
     # Wait for connection
     if check_vpn_connection; then
@@ -182,6 +226,9 @@ cleanup_and_exit() {
         rm -f /var/run/openvpn.pid
     fi
     pkill -f "openvpn.*$VPN_CONFIG_FILE" || true
+    
+    # Clean up temporary files
+    rm -f /tmp/openvpn-route-up.sh
     
     echo "✅ Secure torrent session ended"
     exit 0
