@@ -23,12 +23,13 @@ fi
 $SUDO apt-get update
 
 # Install OpenVPN and dependencies
-echo "📦 Installing OpenVPN..."
+echo "📦 Installing OpenVPN and network tools..."
 $SUDO apt-get install -y \
     openvpn \
     wget \
     curl \
-    unzip
+    unzip \
+    iproute2
 
 # Create OpenVPN configuration directory
 echo "📁 Creating OpenVPN configuration directories..."
