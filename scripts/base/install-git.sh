@@ -18,9 +18,6 @@ $SUDO apt-get install -y \
     git \
     ca-certificates
 
-# Clean up
-$SUDO apt-get clean
-$SUDO rm -rf /var/lib/apt/lists/*
 
 echo "✅ Git installation completed!"
 echo ""

@@ -30,6 +30,12 @@ else
     export PATH=/home/$USERNAME/.npm-global/bin:$PATH && npm install -g @anthropic-ai/claude-code
 fi
 
+# Export PATH for current session (if running interactively)
+if [ -t 1 ]; then
+    echo "🔄 Updating PATH for current session..."
+    export PATH=/home/$USERNAME/.npm-global/bin:$PATH
+fi
+
 # Verify installation
 echo "✅ Claude Code CLI installation completed!"
 echo ""
@@ -44,4 +50,8 @@ echo "🔧 Next steps:"
 echo "   1. Run 'claude auth' to authenticate with your Anthropic API key"
 echo "   2. Run 'claude --help' to see available commands"
 echo "   3. Start coding with Claude assistance!"
+echo ""
+echo "💡 Note: If 'claude' command is not found, run:"
+echo "   source ~/.bashrc"
+echo "   or export PATH=/home/$USERNAME/.npm-global/bin:\$PATH"
 echo ""

@@ -92,6 +92,6 @@ When creating new scripts:
 - Include user auto-detection: `USERNAME=$(getent passwd 1000 | cut -d: -f1)`
 - Include descriptive echo messages with emojis
 - Handle permissions correctly (use detected `$USERNAME`)
-- Clean up package lists after apt operations
 - Provide "Next steps" guidance
 - Test for existing installations when possible
+- No cleanup needed (working environment, not Docker build)

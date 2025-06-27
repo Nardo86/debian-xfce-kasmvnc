@@ -78,10 +78,6 @@ $SUDO apt-get install -y package1 package2
 # User-specific configuration (always as target user)
 $SUDO chown -R $USERNAME:$USERNAME /home/$USERNAME/.config
 
-# Clean up (system operation)
-$SUDO apt-get clean
-$SUDO rm -rf /var/lib/apt/lists/*
-
 echo "✅ [TOOL_NAME] installation completed!"
 echo ""
 echo "📋 Next steps:"

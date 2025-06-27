@@ -32,7 +32,9 @@ $SUDO apt-get install -y \
 
 # Add ProtonVPN GPG key and repository (official method)
 echo "🔑 Adding ProtonVPN GPG key..."
-wget -qO - https://repo.protonvpn.com/debian/public_key.asc | $SUDO gpg --dearmor -o /usr/share/keyrings/protonvpn-stable-archive-keyring.gpg
+wget -qO /tmp/protonvpn-key.asc https://repo.protonvpn.com/debian/public_key.asc
+$SUDO gpg --dearmor -o /usr/share/keyrings/protonvpn-stable-archive-keyring.gpg /tmp/protonvpn-key.asc
+$SUDO rm -f /tmp/protonvpn-key.asc
 
 echo "📦 Adding ProtonVPN repository..."
 echo "deb [signed-by=/usr/share/keyrings/protonvpn-stable-archive-keyring.gpg] https://repo.protonvpn.com/debian stable main" | $SUDO tee /etc/apt/sources.list.d/protonvpn-stable.list
@@ -48,9 +50,6 @@ $SUDO apt-get install -y protonvpn-cli
 echo "📥 Installing qBittorrent..."
 $SUDO apt-get install -y qbittorrent
 
-# Clean up
-$SUDO apt-get clean
-$SUDO rm -rf /var/lib/apt/lists/*
 
 echo "✅ ProtonVPN and qBittorrent installation completed!"
 echo ""

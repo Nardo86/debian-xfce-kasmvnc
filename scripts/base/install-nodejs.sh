@@ -51,8 +51,10 @@ echo 'export PATH=/home/'$USERNAME'/.npm-global/bin:$PATH' >> /home/$USERNAME/.b
 chown -R $USERNAME:$USERNAME /home/$USERNAME/.npm-global
 chown $USERNAME:$USERNAME /home/$USERNAME/.profile /home/$USERNAME/.bashrc
 
-# Install yarn globally using the user's npm configuration
-sudo -u $USERNAME bash -c 'export PATH=/home/'$USERNAME'/.npm-global/bin:$PATH && npm install -g yarn'
+# Install yarn globally
+# Use system npm for yarn to ensure it's always accessible
+echo "📦 Installing yarn globally..."
+$SUDO npm install -g yarn
 
 # Export PATH for current session (if running interactively)
 if [ -t 1 ]; then
@@ -60,16 +62,13 @@ if [ -t 1 ]; then
     export PATH=/home/$USERNAME/.npm-global/bin:$PATH
 fi
 
-# Clean up
-$SUDO apt-get clean
-$SUDO rm -rf /var/lib/apt/lists/*
 
 echo "✅ Node.js installation completed!"
 echo ""
 echo "📋 Installed versions:"
 node --version
 npm --version
-sudo -u $USERNAME yarn --version
+yarn --version
 echo ""
 echo "🔧 npm configured to install global packages in /home/$USERNAME/.npm-global"
 echo "   (avoids EACCES permission errors)"
