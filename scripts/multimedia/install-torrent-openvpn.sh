@@ -1,0 +1,69 @@
+#!/bin/bash
+set -e
+
+echo "🔒 Installing OpenVPN, qBittorrent for secure torrenting..."
+
+# Detect the non-root user (usually UID 1000)
+USERNAME=$(getent passwd 1000 | cut -d: -f1)
+if [ -z "$USERNAME" ]; then
+    echo "❌ Error: Could not detect container user"
+    exit 1
+fi
+
+echo "👤 Detected user: $USERNAME"
+
+# Check if running as root, if not use sudo for system operations
+if [ "$EUID" -ne 0 ]; then
+    SUDO="sudo"
+else
+    SUDO=""
+fi
+
+# Update package list
+$SUDO apt-get update
+
+# Install OpenVPN and dependencies
+echo "📦 Installing OpenVPN..."
+$SUDO apt-get install -y \
+    openvpn \
+    wget \
+    curl \
+    unzip
+
+# Create OpenVPN configuration directory
+echo "📁 Creating OpenVPN configuration directories..."
+$SUDO mkdir -p /etc/openvpn/protonvpn
+$SUDO chown root:$USERNAME /etc/openvpn/protonvpn
+$SUDO chmod 775 /etc/openvpn/protonvpn
+
+# Install qBittorrent from official Debian repository
+echo "📥 Installing qBittorrent..."
+$SUDO apt-get install -y qbittorrent
+
+
+echo "✅ OpenVPN and qBittorrent installation completed!"
+echo ""
+echo "📋 VPN Configuration (works with any OpenVPN provider):"
+echo "   • ProtonVPN: https://account.protonvpn.com/downloads"
+echo "   • NordVPN: Download OpenVPN configs from account"
+echo "   • ExpressVPN: Manual configuration section"
+echo "   • Any OpenVPN provider: Download .ovpn files"
+echo ""
+echo "🔧 Configuration steps:"
+echo "   1. Download .ovpn config files from your VPN provider"
+echo "   2. Copy files to: /etc/openvpn/protonvpn/ (or create provider folder)"
+echo "   3. Connect: sudo openvpn --config [config-file].ovpn"
+echo "   4. Test connection: curl ifconfig.me (check IP changed)"
+echo ""
+echo "📱 Usage commands:"
+echo "   sudo openvpn --config [file].ovpn    # Connect to VPN"
+echo "   sudo pkill openvpn                   # Disconnect VPN"
+echo "   ip route                             # Check routing table"
+echo "   qbittorrent                          # Launch torrent client"
+echo ""
+echo "⚠️  Security Notes:"
+echo "   - Always test VPN connection before torrenting"
+echo "   - Configure qBittorrent to bind to VPN interface (tun0)"
+echo "   - Monitor connection: VPN disconnection exposes real IP"
+echo "   - Use kill switch if available from your VPN provider"
+echo ""
