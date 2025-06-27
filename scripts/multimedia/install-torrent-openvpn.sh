@@ -36,6 +36,12 @@ $SUDO mkdir -p /etc/openvpn/protonvpn
 $SUDO chown root:$USERNAME /etc/openvpn/protonvpn
 $SUDO chmod 775 /etc/openvpn/protonvpn
 
+# Create TUN device for OpenVPN (required in Docker containers)
+echo "🔧 Setting up TUN device for OpenVPN..."
+$SUDO mkdir -p /dev/net
+$SUDO mknod /dev/net/tun c 10 200 2>/dev/null || echo "TUN device already exists"
+$SUDO chmod 600 /dev/net/tun
+
 # Install qBittorrent from official Debian repository
 echo "📥 Installing qBittorrent..."
 $SUDO apt-get install -y qbittorrent
@@ -66,4 +72,9 @@ echo "   - Always test VPN connection before torrenting"
 echo "   - Configure qBittorrent to bind to VPN interface (tun0)"
 echo "   - Monitor connection: VPN disconnection exposes real IP"
 echo "   - Use kill switch if available from your VPN provider"
+echo ""
+echo "🔧 Docker/Container Notes:"
+echo "   - TUN device automatically created for container compatibility"
+echo "   - If connection fails, container may need --cap-add=NET_ADMIN"
+echo "   - Some VPN configs may require --privileged flag"
 echo ""
