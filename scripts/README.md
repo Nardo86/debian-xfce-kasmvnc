@@ -44,6 +44,7 @@ docker exec container-name bash /scripts/multimedia/install-torrent-vpn.sh
 
 ### Development Tools (`development/`)
 - **`install-claude-code.sh`** - Claude Code CLI for AI-assisted development
+- **`install-vscode.sh`** - Visual Studio Code editor
 
 ### Multimedia Tools (`multimedia/`)
 - **`install-torrent-vpn.sh`** - ProtonVPN CLI + qBittorrent for secure torrenting
@@ -75,9 +76,9 @@ docker exec --user user container-name bash /scripts/base/install-nodejs.sh
 We welcome contributions for additional development environments!
 
 **Planned scripts:**
-- `install-vscode.sh` - Visual Studio Code
 - `install-dotnet.sh` - .NET development environment  
 - `install-flutter.sh` - Flutter + Dart + Android SDK
+- `install-docker.sh` - Docker CE for containerized development
 
 **To contribute:**
 1. Fork the repository
