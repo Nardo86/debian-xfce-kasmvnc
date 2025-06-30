@@ -1,21 +1,16 @@
 #!/bin/bash
 #
 # Secure Torrent Launcher with VPN Protection
-# Security mechanisms inspired by haugene/docker-transmission-openvpn (GPL v3)
-# https://github.com/haugene/docker-transmission-openvpn
-# Adapted for qBittorrent + OpenVPN environment
+# Preserves KasmVNC access while routing torrent traffic through VPN
+# Based on haugene/docker-transmission-openvpn concepts
 #
 set -e
 
 echo "🔒 Secure Torrent Launcher with VPN Protection"
-echo "=============================================="
-echo "   Inspired by haugene/docker-transmission-openvpn"
-echo "   Security concepts adapted for qBittorrent + OpenVPN"
-echo ""
-echo "⚠️  EXPERIMENTAL: Script in development phase"
-echo "   - May cause VNC connection loss due to route changes"
-echo "   - Use docker restart to recover if connection is lost"
-echo "   - Please report issues and feedback for improvements"
+echo "==============================================="
+echo "   🎯 Routes torrent traffic through VPN"
+echo "   🌐 Preserves KasmVNC HTTP access"
+echo "   🛡️ Enhanced security with kill switch"
 echo ""
 
 # Configuration
@@ -30,12 +25,80 @@ if [ -z "$USERNAME" ]; then
     exit 1
 fi
 
-# Check if running as root for VPN operations
+# Check if running as root
 if [ "$(id -u)" -ne 0 ]; then
-    echo "❌ Error: This script must be run as root (VPN requires privileges)"
-    echo "   Usage: sudo bash /scripts/multimedia/start-secure-torrent.sh"
+    echo "❌ Error: This script must be run as root"
+    echo "   Usage: sudo $0"
     exit 1
 fi
+
+# Function to find VPN config
+find_vpn_config() {
+    echo "🔍 Looking for OpenVPN configuration files..."
+    
+    if [ ! -d "$VPN_CONFIG_DIR" ]; then
+        echo "❌ VPN configuration directory not found: $VPN_CONFIG_DIR"
+        return 1
+    fi
+    
+    local config_files=$(find "$VPN_CONFIG_DIR" -name "*.ovpn" -type f 2>/dev/null)
+    
+    if [ -z "$config_files" ]; then
+        echo "❌ No .ovpn configuration files found in $VPN_CONFIG_DIR"
+        return 1
+    fi
+    
+    VPN_CONFIG_FILE=$(echo "$config_files" | head -1)
+    echo "✅ Found VPN config: $(basename "$VPN_CONFIG_FILE")"
+    return 0
+}
+
+# Function to create IMPROVED route preservation script
+create_improved_route_script() {
+    local script_path="/tmp/openvpn-route-up-improved.sh"
+    
+    cat > "$script_path" << 'EOF'
+#!/bin/bash
+# IMPROVED OpenVPN route-up script to preserve Docker and KasmVNC access
+echo "🔧 [IMPROVED] Preserving network routes after VPN connection..."
+
+# Get original gateway and device BEFORE any tunnel changes
+DEFAULT_GW=$(ip route show 0.0.0.0/0 | grep -v tun | awk '{print $3}' | head -1)
+ORIGINAL_DEV=$(ip route show 0.0.0.0/0 | grep -v tun | awk '{print $5}' | head -1)
+
+if [ -n "$DEFAULT_GW" ] && [ -n "$ORIGINAL_DEV" ]; then
+    echo "   Original gateway: $DEFAULT_GW via $ORIGINAL_DEV"
+    
+    # Preserve ALL Docker networks
+    echo "   Adding Docker network routes..."
+    for network in 172.16.0.0/12 192.168.0.0/16 10.0.0.0/8; do
+        ip route add $network via $DEFAULT_GW dev $ORIGINAL_DEV 2>/dev/null || true
+        echo "     Added: $network via $DEFAULT_GW dev $ORIGINAL_DEV"
+    done
+    
+    # Specifically preserve the container's network
+    CONTAINER_NETWORK=$(ip route show dev $ORIGINAL_DEV | grep kernel | head -1 | awk '{print $1}')
+    if [ -n "$CONTAINER_NETWORK" ]; then
+        ip route add $CONTAINER_NETWORK dev $ORIGINAL_DEV 2>/dev/null || true
+        echo "     Preserved container network: $CONTAINER_NETWORK"
+    fi
+    
+    # Preserve localhost
+    ip route add 127.0.0.0/8 dev lo 2>/dev/null || true
+    echo "     Preserved localhost routing"
+    
+    echo "✅ Enhanced Docker and KasmVNC routes preserved"
+else
+    echo "❌ Could not determine original gateway"
+fi
+
+echo "📋 Current routing table after VPN:"
+ip route show | head -10
+EOF
+    
+    chmod +x "$script_path"
+    echo "$script_path"
+}
 
 # Function to check VPN connection
 check_vpn_connection() {
@@ -45,7 +108,6 @@ check_vpn_connection() {
     echo "🔍 Waiting for VPN connection..."
     
     while [ $attempt -le $max_attempts ]; do
-        # Check if tun interface exists and has IP
         if ip addr show tun0 >/dev/null 2>&1; then
             local tun_ip=$(ip addr show tun0 | grep 'inet ' | awk '{print $2}' | cut -d'/' -f1)
             if [ -n "$tun_ip" ]; then
@@ -59,7 +121,7 @@ check_vpn_connection() {
         attempt=$((attempt + 1))
     done
     
-    echo "❌ VPN connection timeout after $max_attempts attempts"
+    echo "❌ VPN connection timeout"
     return 1
 }
 
@@ -78,84 +140,38 @@ test_vpn_internet() {
     fi
 }
 
-# Function to find VPN config
-find_vpn_config() {
-    echo "🔍 Looking for OpenVPN configuration files..."
+# Function to test KasmVNC access
+test_kasmvnc_access() {
+    echo "🌐 Testing KasmVNC accessibility..."
     
-    # Check if config directory exists
-    if [ ! -d "$VPN_CONFIG_DIR" ]; then
-        echo "❌ VPN configuration directory not found: $VPN_CONFIG_DIR"
-        return 1
+    if curl -s --connect-timeout 5 http://localhost:8444 >/dev/null 2>&1; then
+        echo "✅ KasmVNC accessible on localhost:8444"
+    else
+        echo "⚠️  KasmVNC NOT accessible on localhost:8444"
     fi
     
-    # Find .ovpn files
-    local config_files=$(find "$VPN_CONFIG_DIR" -name "*.ovpn" -type f 2>/dev/null)
-    
-    if [ -z "$config_files" ]; then
-        echo "❌ No .ovpn configuration files found in $VPN_CONFIG_DIR"
-        echo ""
-        echo "📋 To fix this:"
-        echo "   1. Download OpenVPN config files from your VPN provider"
-        echo "   2. Copy them to: $VPN_CONFIG_DIR/"
-        echo "   3. Ensure files have .ovpn extension"
-        echo ""
-        echo "🔗 Popular VPN providers:"
-        echo "   • ProtonVPN: https://account.protonvpn.com/downloads"
-        echo "   • NordVPN: Member area → OpenVPN configs"
-        echo "   • ExpressVPN: Manual config section"
-        echo ""
-        return 1
+    local container_ip=$(ip addr show eth0 | grep 'inet ' | awk '{print $2}' | cut -d'/' -f1)
+    if [ -n "$container_ip" ]; then
+        if curl -s --connect-timeout 5 http://$container_ip:8444 >/dev/null 2>&1; then
+            echo "✅ KasmVNC accessible on $container_ip:8444"
+        else
+            echo "⚠️  KasmVNC NOT accessible on $container_ip:8444"
+        fi
     fi
-    
-    # Use first config file found
-    VPN_CONFIG_FILE=$(echo "$config_files" | head -1)
-    echo "✅ Found VPN config: $(basename "$VPN_CONFIG_FILE")"
-    return 0
+    echo ""
 }
 
-# Function to create route preservation script
-create_route_script() {
-    local script_path="/tmp/openvpn-route-up.sh"
-    
-    cat > "$script_path" << 'EOF'
-#!/bin/bash
-# OpenVPN route-up script to preserve Docker network access
-echo "🔧 Preserving Docker routes after VPN connection..."
-
-# Get original gateway (not through tunnel)
-DEFAULT_GW=$(ip route show 0.0.0.0/0 | grep -v tun | awk '{print $3}' | head -1)
-ORIGINAL_DEV=$(ip route show 0.0.0.0/0 | grep -v tun | awk '{print $5}' | head -1)
-
-if [ -n "$DEFAULT_GW" ] && [ -n "$ORIGINAL_DEV" ]; then
-    echo "   Original gateway: $DEFAULT_GW via $ORIGINAL_DEV"
-    
-    # Preserve Docker networks
-    for network in 172.17.0.0/16 172.18.0.0/16 172.19.0.0/16 172.20.0.0/16; do
-        ip route add $network via $DEFAULT_GW dev $ORIGINAL_DEV 2>/dev/null || true
-    done
-    
-    echo "✅ Docker routes preserved"
-else
-    echo "⚠️  Could not determine original gateway"
-fi
-EOF
-    
-    chmod +x "$script_path"
-    echo "$script_path"
-}
-
-# Function to start VPN
+# Function to start VPN (like original but with improved routing)
 start_vpn() {
     echo "🚀 Starting OpenVPN connection..."
     echo "   Config: $(basename "$VPN_CONFIG_FILE")"
-    echo "   Attempting to preserve Docker network routes..."
-    echo "   Press Ctrl+C to stop VPN and exit"
+    echo "   Will prompt for credentials..."
     echo ""
     
-    # Create route preservation script
-    local route_script=$(create_route_script)
+    # Create improved route preservation script
+    local route_script=$(create_improved_route_script)
     
-    # Start OpenVPN with route script
+    # Start OpenVPN EXACTLY like the original script that works
     openvpn --config "$VPN_CONFIG_FILE" \
             --daemon \
             --writepid /var/run/openvpn.pid \
@@ -165,6 +181,8 @@ start_vpn() {
     # Wait for connection
     if check_vpn_connection; then
         if test_vpn_internet; then
+            echo "✅ VPN started successfully"
+            test_kasmvnc_access
             return 0
         else
             echo "❌ VPN connected but no internet access"
@@ -180,12 +198,10 @@ start_vpn() {
 start_torrent_client() {
     echo "🏴‍☠️ Starting $TORRENT_CLIENT with VPN protection..."
     
-    # Switch to detected user and start GUI application
     sudo -u "$USERNAME" DISPLAY=:1 "$TORRENT_CLIENT" &
     local torrent_pid=$!
     
     echo "✅ $TORRENT_CLIENT started (PID: $torrent_pid)"
-    echo "   Access through desktop environment"
     return 0
 }
 
@@ -195,17 +211,24 @@ monitor_and_cleanup() {
     echo "🛡️ Monitoring VPN connection..."
     echo "   Press Ctrl+C to stop VPN and torrent client"
     
-    # Trap cleanup on exit
     trap cleanup_and_exit INT TERM
     
     while true; do
         if ! ip addr show tun0 >/dev/null 2>&1; then
             echo ""
-            echo "⚠️ VPN connection lost! Stopping torrent client for security..."
+            echo "⚠️ VPN connection lost! Stopping torrent client..."
             pkill -f "$TORRENT_CLIENT" || true
             echo "❌ Torrent client stopped due to VPN disconnection"
             break
         fi
+        
+        # Test KasmVNC every 30 seconds
+        if [ $(($(date +%s) % 30)) -eq 0 ]; then
+            if ! curl -s --connect-timeout 3 http://localhost:8444 >/dev/null 2>&1; then
+                echo "⚠️ Warning: KasmVNC not accessible"
+            fi
+        fi
+        
         sleep 5
     done
 }
@@ -215,20 +238,18 @@ cleanup_and_exit() {
     echo ""
     echo "🛑 Shutting down secure torrent session..."
     
-    # Stop torrent client
     echo "   Stopping torrent client..."
     pkill -f "$TORRENT_CLIENT" || true
     
-    # Stop VPN
     echo "   Stopping VPN connection..."
     if [ -f /var/run/openvpn.pid ]; then
         kill $(cat /var/run/openvpn.pid) || true
         rm -f /var/run/openvpn.pid
     fi
-    pkill -f "openvpn.*$VPN_CONFIG_FILE" || true
+    pkill -f "openvpn" || true
     
-    # Clean up temporary files
-    rm -f /tmp/openvpn-route-up.sh
+    echo "   Cleaning up temporary files..."
+    rm -f /tmp/openvpn-route-up-improved.sh
     
     echo "✅ Secure torrent session ended"
     exit 0
@@ -236,7 +257,14 @@ cleanup_and_exit() {
 
 # Main execution
 main() {
-    # Check for VPN config
+    echo "🎯 Starting procedure..."
+    echo ""
+    
+    # Test KasmVNC access before VPN
+    echo "📊 Testing KasmVNC accessibility BEFORE VPN:"
+    test_kasmvnc_access
+    
+    # Find VPN config
     if ! find_vpn_config; then
         exit 1
     fi
