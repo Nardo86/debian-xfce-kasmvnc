@@ -28,8 +28,8 @@ $SUDO apt-get install -y \
     gnupg \
     software-properties-common
 
-# Add NodeSource repository for latest Node.js LTS
-curl -fsSL https://deb.nodesource.com/setup_lts.x | $SUDO bash -
+# Add NodeSource repository for latest Node.js (current)
+curl -fsSL https://deb.nodesource.com/setup_current.x | $SUDO bash -
 
 # Install Node.js (includes npm)
 $SUDO apt-get install -y nodejs

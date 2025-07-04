@@ -79,21 +79,19 @@ RUN ARCH=$(dpkg --print-architecture) && \
 # Crea gruppo e utente non-root con bash come shell predefinita
 RUN groupadd --gid $USER_GID $USERNAME \
     && useradd --uid $USER_UID --gid $USER_GID -m -s /bin/bash $USERNAME \
-    && echo "$USERNAME:$USERNAME" | chpasswd \
+    && echo "$USERNAME:$VNC_PASSWORD" | chpasswd \
     && usermod -aG sudo $USERNAME \
     && usermod -aG ssl-cert $USERNAME
 
 # Configura sudo senza password
 RUN echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-# Configura SSH server (solo se abilitato)
-RUN if [ "$ENABLE_SSH" = "true" ]; then \
-        mkdir -p /var/run/sshd && \
-        sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config && \
-        sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
-        sed -i 's/#Port 22/Port 22/' /etc/ssh/sshd_config && \
-        echo "AllowUsers $USERNAME" >> /etc/ssh/sshd_config; \
-    fi
+# Configura SSH server (sempre installato, avvio condizionale)
+RUN mkdir -p /var/run/sshd && \
+    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config && \
+    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
+    sed -i 's/#Port 22/Port 22/' /etc/ssh/sshd_config && \
+    echo "AllowUsers $USERNAME" >> /etc/ssh/sshd_config
 
 # Crea directory VNC e file xstartup
 RUN mkdir -p /home/$USERNAME/.vnc && \
