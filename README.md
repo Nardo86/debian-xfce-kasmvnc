@@ -61,6 +61,18 @@ docker run -d \
   nardo86/debian-xfce-kasmvnc:latest
 ```
 
+**With SSH enabled:**
+```bash
+docker run -d \
+  --name debian-xfce \
+  -p 8444:8444 \
+  -p 2222:22 \
+  -v /host/shared:/home/user/shared \
+  -e VNC_PASSWORD="mysecretpassword" \
+  -e ENABLE_SSH="true" \
+  nardo86/debian-xfce-kasmvnc:latest
+```
+
 ### Docker Compose
 
 **Basic setup:**
@@ -88,10 +100,12 @@ services:
     container_name: debian-xfce-desktop
     ports:
       - "8444:8444"
+      - "2222:22"  # SSH port (only if ENABLE_SSH=true)
     environment:
       # Required/Recommended
       - VNC_PASSWORD=your_secure_password
       - ENABLE_HTTPS=false
+      - ENABLE_SSH=true
       
       # Optional (uncomment to customize)
       # - USER=user
@@ -109,6 +123,7 @@ services:
 |----------|---------|-------------|
 | `VNC_PASSWORD` | `password` | Password for VNC access |
 | `ENABLE_HTTPS` | `false` | Enable HTTPS mode (`true`/`false`) |
+| `ENABLE_SSH` | `false` | Enable SSH server (`true`/`false`) |
 | `USER` | `user` | Username inside container |
 | `HOME` | `/home/user` | User home directory |
 | `KASMVNC_VERBOSE` | `1` | Enable verbose logging |
@@ -126,6 +141,15 @@ services:
 - Access via `https://localhost:8444`
 - Direct HTTPS access with self-signed certificates
 - Browser will show certificate warning (accept to continue)
+
+### SSH Access
+
+**SSH Mode:**
+- Set `ENABLE_SSH=true`
+- Map port 22 to host (e.g., `-p 2222:22`)
+- SSH access via `ssh user@localhost -p 2222`
+- Uses the same password as the container user
+- Only allows the container user (no root access)
 
 ---
 

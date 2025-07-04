@@ -7,8 +7,9 @@ ARG USER_GID=1000
 ARG VNC_PASSWORD=password
 ARG ENABLE_HTTPS=false
 ARG ENABLE_GPU=false
+ARG ENABLE_SSH=false
 
-# Aggiorna sistema e installa XFCE completo + Firefox + Terminal
+# Aggiorna sistema e installa XFCE completo + Firefox + Terminal + SSH
 RUN apt-get update && apt-get upgrade -y && \
     apt-get install -y \
     xfce4 \
@@ -20,6 +21,7 @@ RUN apt-get update && apt-get upgrade -y && \
     wget \
     nano \
     locales \
+    openssh-server \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -84,6 +86,15 @@ RUN groupadd --gid $USER_GID $USERNAME \
 # Configura sudo senza password
 RUN echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
+# Configura SSH server (solo se abilitato)
+RUN if [ "$ENABLE_SSH" = "true" ]; then \
+        mkdir -p /var/run/sshd && \
+        sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config && \
+        sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
+        sed -i 's/#Port 22/Port 22/' /etc/ssh/sshd_config && \
+        echo "AllowUsers $USERNAME" >> /etc/ssh/sshd_config; \
+    fi
+
 # Crea directory VNC e file xstartup
 RUN mkdir -p /home/$USERNAME/.vnc && \
     echo '#!/bin/sh' > /home/$USERNAME/.vnc/xstartup && \
@@ -144,6 +155,14 @@ RUN touch /home/$USERNAME/.Xauthority && \
     echo '    PROTOCOL="https"' >> /home/$USERNAME/start-vnc.sh && \
     echo 'fi' >> /home/$USERNAME/start-vnc.sh && \
     echo '' >> /home/$USERNAME/start-vnc.sh && \
+    echo '# Start SSH server if enabled' >> /home/$USERNAME/start-vnc.sh && \
+    echo 'if [ "$ENABLE_SSH" = "true" ]; then' >> /home/$USERNAME/start-vnc.sh && \
+    echo '    echo "Starting SSH server..."' >> /home/$USERNAME/start-vnc.sh && \
+    echo '    sudo /usr/sbin/sshd -D &' >> /home/$USERNAME/start-vnc.sh && \
+    echo '    echo "SSH server started on port 22"' >> /home/$USERNAME/start-vnc.sh && \
+    echo '    echo "SSH access: ssh $USER@localhost -p 22"' >> /home/$USERNAME/start-vnc.sh && \
+    echo 'fi' >> /home/$USERNAME/start-vnc.sh && \
+    echo '' >> /home/$USERNAME/start-vnc.sh && \
     echo '# Start VNC server' >> /home/$USERNAME/start-vnc.sh && \
     echo 'echo "Starting VNC server..."' >> /home/$USERNAME/start-vnc.sh && \
     echo 'echo "Access: ${PROTOCOL}://localhost:8444"' >> /home/$USERNAME/start-vnc.sh && \
@@ -171,11 +190,13 @@ ENV HOME=/home/$USERNAME
 ENV VNC_PASSWORD=$VNC_PASSWORD
 ENV ENABLE_HTTPS=$ENABLE_HTTPS
 ENV ENABLE_GPU=$ENABLE_GPU
+ENV ENABLE_SSH=$ENABLE_SSH
 ENV LANG=en_US.UTF-8
 ENV LC_ALL=en_US.UTF-8
 
-# Esponi porta KasmVNC
+# Esponi porta KasmVNC e SSH (condizionale)
 EXPOSE 8444
+EXPOSE 22
 
 # Comando di default - avvia lo script di startup
 CMD ["./start-vnc.sh"]
